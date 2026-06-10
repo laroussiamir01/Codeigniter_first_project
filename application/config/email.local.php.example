@@ -1,0 +1,16 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * Local email credentials override.
+ *
+ * Copy this file to email.local.php and fill in real SMTP credentials.
+ * email.local.php is gitignored so secrets never land in version control.
+ *
+ * Example:
+ *   $config['smtp_host'] = 'smtp.gmail.com';
+ *   $config['smtp_user'] = 'you@example.com';
+ *   $config['smtp_pass'] = 'app-specific-password';
+ *   $config['smtp_port'] = 587;
+ *   $config['smtp_crypto'] = 'tls';
+ */

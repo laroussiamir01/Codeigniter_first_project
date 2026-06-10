@@ -33,3 +33,4 @@ user_guide_src/cilexer/pycilexer.egg-info/*
 node_modules/
 AGENTS.md
 contributing.md
+application/config/email.local.php
