@@ -72,14 +72,12 @@ public function login(){
     $user_id= $this->User_model->user_login($username,$password);
 
     if($user_id){
-      $data = array(
-        'user_id' => $user_id,
+      $this->session->set_userdata('pending_2fa', [
+        'user_id'  => $user_id,
         'username' => $username,
-        'logged_in'=> true
-      );
-      $this ->session->set_userdata($data);
-      $this->session->set_flashdata('login_succed','you\'re now logged in.');
-      redirect(base_url('home'));
+      ]);
+      $this->session->set_flashdata('login_succed', 'Please complete two-factor verification.');
+      redirect(base_url('two_factor/verify'));
     } else{
       $this->session->set_flashdata('login_failed', 'Usernme or password is incorrect');
       redirect(base_url('home'));
