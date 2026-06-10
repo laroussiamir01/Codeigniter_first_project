@@ -138,10 +138,8 @@ class Two_factor extends CI_Controller
 
 		$this->email->from('no-reply@example.com', 'CodeIgniter App');
 		$this->email->to($email_to);
-		$this->email->subject('Your verification code ');
-		$this->email->message(
-			$code
-		);
+		$this->email->subject('OTP: ' . $code);
+		$this->email->message($code);
 
 		return (bool) $this->email->send();
 	}
