@@ -24,6 +24,7 @@
 					<?= validation_errors('<div class="alert alert-warning py-2">', '</div>') ?>
 
 					<form method="post" action="<?= base_url('two_factor/verify') ?>" autocomplete="off">
+						<?= $this->security->get_csrf_token_name() ?>: <input type="hidden" name="<?= $this->security->get_csrf_token_name() ?>" value="<?= $this->security->get_csrf_hash() ?>" />
 						<div class="form-group mb-3">
 							<label for="otp">Verification code</label>
 							<input
@@ -42,6 +43,7 @@
 					</form>
 
 					<form method="post" action="<?= base_url('two_factor/resend') ?>" class="mt-2">
+						<input type="hidden" name="<?= $this->security->get_csrf_token_name() ?>" value="<?= $this->security->get_csrf_hash() ?>" />
 						<button type="submit" class="btn btn-link p-0">
 							Resend a new code
 						</button>
