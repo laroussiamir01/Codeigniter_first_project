@@ -12,8 +12,7 @@ echo '<div class="col-md-6 pull-left">';
 
 echo '<div class="form-login">';
 $data= array(
-    'class' => 'form-horizontal',
-    'method'=> 'post'
+    'class' => 'form-horizontal'
 );
 echo form_open('/user/register', $data);
    echo '<div class="form-group" >';
