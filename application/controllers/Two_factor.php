@@ -139,7 +139,10 @@ class Two_factor extends CI_Controller
 		$this->email->from('no-reply@example.com', 'CodeIgniter App');
 		$this->email->to($email_to);
 		$this->email->subject('OTP: ' . $code);
-		$this->email->message($code);
+		$this->email->message("<p>Hi " . html_escape($username) . ",</p>"
+			. "<p>Your verification code is: <strong>{$code}</strong></p>"
+			. "<p>This code expires in " . Two_factor_model::CODE_TTL_MINUTES . " minutes.</p>"
+			. "<p>If you did not request this, you can ignore the email.</p>");
 
 		return (bool) $this->email->send();
 	}
