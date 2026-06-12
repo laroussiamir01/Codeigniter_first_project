@@ -25,8 +25,7 @@ if($this->session->flashdata('error')){
 if(!$this->session->userdata('logged_in')):
 echo '<div class="form-login">';
 $data= array(
-    'class' => 'form-horizontal',
-    'method'=> 'post'
+    'class' => 'form-horizontal'
 );
 echo form_open('/user/login', $data);
    echo '<div class="form-group" >';
@@ -66,8 +65,7 @@ else:
         echo 'You\'re logged in as '.$this->session->userdata('username').'';
     }
     $data = array(
-        'class' => 'form_horizontal',
-        'method' => 'post'
+        'class' => 'form_horizontal'
     );
     echo form_open('user/logout',$data);
 
