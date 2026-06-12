@@ -23,7 +23,7 @@ echo form_open('/user/register', $data);
         'placeholder' => 'Username'
     );
     echo form_input($data);
-   echo '</div';
+   echo '</div>';
 
    echo '<div class="form-group" >';
     $data = array(
@@ -33,7 +33,7 @@ echo form_open('/user/register', $data);
         'placeholder' => 'Password'
     );
     echo form_input($data);
-   echo '</div';
+   echo '</div>';
 
    echo '<div class="form-group" >';
     $data = array(
@@ -43,8 +43,8 @@ echo form_open('/user/register', $data);
         'placeholder' => 'Repeat Password'
     );
     echo form_input($data);
-   echo '</div';
-   
+   echo '</div>';
+
    echo '<div class="form-group" >';
     $data = array(
         'class'=> 'form-control',
@@ -53,7 +53,7 @@ echo form_open('/user/register', $data);
         'placeholder' => 'First Name'
     );
     echo form_input($data);
-   echo '</div';
+   echo '</div>';
 
    echo '<div class="form-group" >';
     $data = array(
@@ -63,10 +63,7 @@ echo form_open('/user/register', $data);
         'placeholder' => 'Last Name'
     );
     echo form_input($data);
-   echo '</div';
-   
-    echo form_input($data);
-   echo '</div';
+   echo '</div>';
 
    echo '<div class="form-group" >';
     $data = array(
@@ -76,7 +73,7 @@ echo form_open('/user/register', $data);
         'placeholder' => 'Email'
     );
     echo form_input($data);
-   echo '</div';
+   echo '</div>';
 
    echo '<div class="form-group" >';
     $data = array(
@@ -85,7 +82,7 @@ echo form_open('/user/register', $data);
         'name' => 'birthday'
             );
     echo form_input($data);
-   echo '</div';
+   echo '</div>';
 
    echo '<div class="form-group" >';
     $data = array(
@@ -94,7 +91,7 @@ echo form_open('/user/register', $data);
         'value' => 'Register'
     );
     echo form_input($data);
-   echo '</div';
+   echo '</div>';
 
 echo form_close();
 echo '</div>';

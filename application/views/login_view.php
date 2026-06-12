@@ -36,7 +36,7 @@ echo form_open('/user/login', $data);
         'placeholder' => 'Username'
     );
     echo form_input($data);
-   echo '</div';
+   echo '</div>';
 
    echo '<div class="form-group" >';
     $data = array(
@@ -46,7 +46,7 @@ echo form_open('/user/login', $data);
         'placeholder' => 'Password'
     );
     echo form_input($data);
-   echo '</div';
+   echo '</div>';
 
    echo '<div class="form-group" >';
     $data = array(
@@ -55,7 +55,7 @@ echo form_open('/user/login', $data);
         'value' => 'Login'
     );
     echo form_input($data);
-   echo '</div';
+   echo '</div>';
 
 echo form_close();
 echo '</div>';
