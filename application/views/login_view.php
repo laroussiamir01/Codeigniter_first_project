@@ -58,6 +58,9 @@ echo form_open('/user/login', $data);
    echo '</div';
 
 echo form_close();
+   echo '<div class="mt-2 text-center">';
+   echo '<a href="' . base_url('password/forgot') . '">Forgot Password?</a>';
+   echo '</div>';
 echo '</div>';
 else:
 
