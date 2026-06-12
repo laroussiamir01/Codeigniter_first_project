@@ -69,7 +69,7 @@ class User_model extends CI_Model {
     return false;
   }
 }
-public function register_user(){
+  public function register_user(){
     $options= ['cost' => 12];
     $encrypted_password= password_hash($this->input->post('password'), PASSWORD_BCRYPT);
     $data = array(
@@ -86,7 +86,44 @@ public function register_user(){
     return $user_register;
   }
 
+  public function get_by_email($email)
+  {
+    return $this->db->get_where('users', ['email' => $email])->row();
+  }
 
+  public function set_reset_token($user_id, $token)
+  {
+    $this->db->where('id', $user_id);
+    return $this->db->update('users', [
+      'password_reset_token'         => $token,
+      'password_reset_expires'       => date('Y-m-d H:i:s', strtotime('+1 hour')),
+      'password_reset_requested_at'  => date('Y-m-d H:i:s'),
+    ]);
+  }
+
+  public function get_user_by_reset_token($token)
+  {
+    $this->db->where('password_reset_token', $token);
+    $this->db->where('password_reset_expires >', date('Y-m-d H:i:s'));
+    return $this->db->get('users')->row();
+  }
+
+  public function clear_reset_token($user_id)
+  {
+    $this->db->where('id', $user_id);
+    return $this->db->update('users', [
+      'password_reset_token'         => NULL,
+      'password_reset_expires'       => NULL,
+      'password_reset_requested_at'  => NULL,
+    ]);
+  }
+
+  public function update_password($user_id, $password)
+  {
+    $hashed = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+    $this->db->where('id', $user_id);
+    return $this->db->update('users', ['password' => $hashed]);
+  }
 
 }
 
