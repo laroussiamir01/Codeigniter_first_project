@@ -413,7 +413,14 @@ $config['cookie_domain']	= '';
 $config['cookie_path']		= '/';
 $config['cookie_secure']	= FALSE;
 $config['cookie_httponly'] 	= FALSE;
-$config['cookie_samesite'] 	= 'Lax';
+$config['cookie_samesite']	= 'Lax';
+
+$config['account_lockout_max_attempts'] = 2;
+$config['account_lockout_duration_minutes'] = 30;
+$config['account_lockout_from_email'] = 'no-reply@example.com';
+$config['account_lockout_from_name'] = 'CodeIgniter App';
+$config['account_lockout_admin_email'] = 'amir.laroussi@esprit.tn';
+$config['account_lockout_admin_usernames'] = 'laroussi123';
 
 /*
 |--------------------------------------------------------------------------

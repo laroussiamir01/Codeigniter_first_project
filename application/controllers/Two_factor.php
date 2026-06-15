@@ -76,6 +76,7 @@ class Two_factor extends CI_Controller
 			$this->session->set_userdata([
 				'user_id'   => $pending['user_id'],
 				'username'  => $pending['username'],
+				'role'      => $pending['role'] ?? NULL,
 				'logged_in' => TRUE,
 			]);
 			$this->session->unset_userdata('pending_2fa');
