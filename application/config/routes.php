@@ -58,3 +58,7 @@ $route['password/forgot']    = 'password_reset/forgot_password';
 $route['password/send-link'] = 'password_reset/send_reset_link';
 $route['password/reset/(:any)'] = 'password_reset/reset_password/$1';
 $route['password/update']    = 'password_reset/update_password';
+
+// Account lockout routes
+$route['admin/locked-accounts'] = 'admin/locked_accounts';
+$route['admin/unlock/(:num)'] = 'admin/unlock_account/$1';

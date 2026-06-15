@@ -16,7 +16,10 @@ if($this->session->flashdata('error')){
 <p class="bg-danger">
     <?php
     if($this->session->flashdata('login_failed')){
-        echo $this->session->flashdata('login_failed');
+        echo html_escape($this->session->flashdata('login_failed'));
+    }
+    if($this->session->flashdata('login_locked')){
+        echo html_escape($this->session->flashdata('login_locked'));
     }
      ?>
 </p>
