@@ -421,6 +421,8 @@ $config['account_lockout_from_email'] = 'no-reply@example.com';
 $config['account_lockout_from_name'] = 'CodeIgniter App';
 $config['account_lockout_admin_email'] = 'amir.laroussi@esprit.tn';
 $config['account_lockout_admin_usernames'] = 'laroussi123';
+$config['admin_ip_whitelist'] = '';
+$config['admin_dashboard_items_per_page'] = 10;
 
 /*
 |--------------------------------------------------------------------------
