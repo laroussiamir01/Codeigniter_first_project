@@ -59,6 +59,15 @@ $route['password/send-link'] = 'password_reset/send_reset_link';
 $route['password/reset/(:any)'] = 'password_reset/reset_password/$1';
 $route['password/update']    = 'password_reset/update_password';
 
-// Account lockout routes
+// Account lockout and admin routes
+$route['admin'] = 'admin/dashboard';
+$route['admin/dashboard'] = 'admin/dashboard';
+$route['admin/users'] = 'admin/users';
+$route['admin/users/create'] = 'admin/user_create';
+$route['admin/users/edit/(:num)'] = 'admin/user_edit/$1';
+$route['admin/users/delete/(:num)'] = 'admin/user_delete/$1';
+$route['admin/users/search'] = 'admin/search';
 $route['admin/locked-accounts'] = 'admin/locked_accounts';
 $route['admin/unlock/(:num)'] = 'admin/unlock_account/$1';
+$route['admin/login-attempts'] = 'admin/login_attempts';
+$route['admin/otp-logs'] = 'admin/otp_logs';
