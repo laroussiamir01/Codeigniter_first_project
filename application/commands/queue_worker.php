@@ -9,14 +9,66 @@
  * This worker continuously polls the Redis queue and processes jobs
  */
 
-// Set up paths
+// Set current directory for CLI
+if (defined('STDIN')) {
+	chdir(dirname(__FILE__) . '/../..');
+}
+
 $root = dirname(__FILE__) . '/../..';
-define('BASEPATH', $root . '/system/');
-define('APPPATH', $root . '/application/');
-define('FCPATH', $root . '/');
+
+// Environment
 define('ENVIRONMENT', isset($_SERVER['CI_ENV']) ? $_SERVER['CI_ENV'] : 'development');
 
-// Load CodeIgniter bootstrap
+// Error reporting
+error_reporting(-1);
+ini_set('display_errors', 1);
+
+// System and Application paths
+$system_path = 'system';
+$application_folder = 'application';
+$view_folder = '';
+
+// Resolve system path
+if (($_temp = realpath($system_path)) !== FALSE) {
+	$system_path = $_temp . DIRECTORY_SEPARATOR;
+} else {
+	$system_path = strtr(rtrim($system_path, '/\\'), '/\\', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+}
+
+// Resolve application path
+if (is_dir($application_folder)) {
+	if (($_temp = realpath($application_folder)) !== FALSE) {
+		$application_folder = $_temp;
+	} else {
+		$application_folder = strtr(rtrim($application_folder, '/\\'), '/\\', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
+	}
+} elseif (is_dir($system_path . $application_folder . DIRECTORY_SEPARATOR)) {
+	$application_folder = $system_path . strtr(trim($application_folder, '/\\'), '/\\', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
+}
+
+// Define constants
+define('SELF', 'queue_worker.php');
+define('BASEPATH', $system_path);
+define('FCPATH', dirname(__FILE__) . '/../..' . DIRECTORY_SEPARATOR);
+define('SYSDIR', basename(BASEPATH));
+define('APPPATH', $application_folder . DIRECTORY_SEPARATOR);
+
+// Resolve views path
+if (!isset($view_folder[0]) && is_dir(APPPATH . 'views' . DIRECTORY_SEPARATOR)) {
+	$view_folder = APPPATH . 'views';
+} elseif (is_dir($view_folder)) {
+	if (($_temp = realpath($view_folder)) !== FALSE) {
+		$view_folder = $_temp;
+	} else {
+		$view_folder = strtr(rtrim($view_folder, '/\\'), '/\\', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
+	}
+} elseif (is_dir(APPPATH . $view_folder . DIRECTORY_SEPARATOR)) {
+	$view_folder = APPPATH . strtr(trim($view_folder, '/\\'), '/\\', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
+}
+
+define('VIEWPATH', $view_folder . DIRECTORY_SEPARATOR);
+
+// Load CodeIgniter core
 require_once BASEPATH . 'core/CodeIgniter.php';
 
 /**
