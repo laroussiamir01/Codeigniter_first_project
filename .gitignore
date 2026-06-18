@@ -34,4 +34,3 @@ node_modules/
 AGENTS.md
 contributing.md
 application/config/email.local.php
-ci_db.sql

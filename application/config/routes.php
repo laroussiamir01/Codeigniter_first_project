@@ -52,9 +52,3 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 $route['default_controller'] = 'home';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = FALSE;
-
-// Password reset routes
-$route['password/forgot']    = 'password_reset/forgot_password';
-$route['password/send-link'] = 'password_reset/send_reset_link';
-$route['password/reset/(:any)'] = 'password_reset/reset_password/$1';
-$route['password/update']    = 'password_reset/update_password';

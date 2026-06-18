@@ -37,6 +37,7 @@ class Two_factor extends CI_Controller
 		$this->load->library('session');
 		$this->load->library('form_validation');
 		$this->load->library('email');
+		$this->load->library('queue');
 		$this->load->helper('url');
 	}
 
@@ -134,17 +135,19 @@ class Two_factor extends CI_Controller
 			return FALSE;
 		}
 
+		// Issue code immediately (user needs it to exist)
 		$code = $this->Two_factor_model->issue_code($user_id);
 
-		$this->email->from('no-reply@example.com', 'CodeIgniter App');
-		$this->email->to($email_to);
-		$this->email->subject('OTP: ' . $code);
-		$this->email->message("<p>Hi " . html_escape($username) . ",</p>"
-			. "<p>Your verification code is: <strong>{$code}</strong></p>"
-			. "<p>This code expires in " . Two_factor_model::CODE_TTL_MINUTES . " minutes.</p>"
-			. "<p>If you did not request this, you can ignore the email.</p>");
+		// Push email job to queue (non-blocking)
+		$job_pushed = $this->queue->push('send_otp', [
+			'user_id'  => $user_id,
+			'username' => $username,
+			'code'     => $code,
+			'email'    => $email_to,
+		]);
 
-		return (bool) $this->email->send();
+		// Return TRUE immediately - user sees verify page while worker sends email
+		return $job_pushed;
 	}
 
 	private function get_user_email($user_id)
