@@ -5,21 +5,12 @@ This project uses Redis queues for asynchronous email processing, specifically f
 ## Prerequisites
 
 1. **Redis Server**: A running Redis instance (local or managed service like Upstash)
-2. **PHP Composer**: For managing PHP dependencies
-3. **PHP CLI**: For running the queue worker
+2. **PHP CLI**: For running the queue worker
+3. **No external dependencies required** - Uses native PHP socket functions
 
 ## Installation Steps
 
-### 1. Install Predis Dependency
-
-```bash
-cd /path/to/project
-composer install
-```
-
-This will install the `predis/predis` package required for Redis communication.
-
-### 2. Configure Environment Variables
+### 1. Configure Environment Variables
 
 Set the following environment variables in your `.env` or server configuration:
 
@@ -34,7 +25,7 @@ REDIS_PASSWORD=           # (optional) Leave empty if no password
 - Create a new Redis database
 - Copy the connection details to your environment variables
 
-### 3. Verify Queue Configuration
+### 2. Verify Queue Configuration
 
 The queue configuration file is automatically loaded from `application/config/queue.php`. It reads environment variables and falls back to defaults (localhost:6379).
 
