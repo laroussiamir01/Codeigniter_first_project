@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 /**
- * Simple Redis Connection Test
+ * Upstash Redis REST API Connection Test
  * Run: php test_redis.php
  */
 
@@ -32,82 +32,60 @@ foreach ($env_files as $file) {
     }
 }
 
-$host = getenv('REDIS_HOST') ?: 'localhost';
-$port = intval(getenv('REDIS_PORT') ?: 6379);
-$password = getenv('REDIS_PASSWORD') ?: '';
+$rest_url = getenv('UPSTASH_REDIS_REST_URL') ?: '';
+$rest_token = getenv('UPSTASH_REDIS_REST_TOKEN') ?: '';
 
-echo "Testing Redis Connection\n";
-echo "========================\n";
-echo "Host: $host\n";
-echo "Port: $port\n";
-echo "Password: " . (!empty($password) ? '***SET*** (' . strlen($password) . ' chars)' : 'NOT SET') . "\n\n";
+echo "Testing Upstash Redis REST API\n";
+echo "==============================\n";
+echo "REST URL: $rest_url\n";
+echo "Token: " . (!empty($rest_token) ? '***SET*** (' . strlen($rest_token) . ' chars)' : 'NOT SET') . "\n\n";
 
-try {
-    echo "Attempting to connect...\n";
-    $socket = @fsockopen($host, $port, $errno, $errstr, 5);
-    
-    if (!$socket) {
-        throw new Exception("Connection failed: $errstr ($errno)");
-    }
-    
-    echo "✓ Connected to Redis!\n";
-    
-    // Authenticate if password is set
-    if (!empty($password)) {
-        echo "Authenticating with password (Upstash ACL format)...\n";
-        
-        // Try Upstash ACL format first: AUTH default <password>
-        $auth_cmd = '*3' . "\r\n" . '$4' . "\r\n" . 'AUTH' . "\r\n" . '$7' . "\r\n" . 'default' . "\r\n" . '$' . strlen($password) . "\r\n" . $password . "\r\n";
-        fwrite($socket, $auth_cmd);
-        $response = fgets($socket, 512);
-        
-        if (strpos($response, '+OK') !== FALSE) {
-            echo "✓ Authentication successful (ACL format)!\n";
-        } elseif (strpos($response, 'ERR') !== FALSE) {
-            echo "  ACL format failed, trying simple auth...\n";
-            // Fall back to simple format: AUTH <password>
-            $auth_cmd = '*2' . "\r\n" . '$4' . "\r\n" . 'AUTH' . "\r\n" . '$' . strlen($password) . "\r\n" . $password . "\r\n";
-            fwrite($socket, $auth_cmd);
-            $response = fgets($socket, 512);
-            
-            if (strpos($response, '+OK') !== FALSE) {
-                echo "✓ Authentication successful (simple format)!\n";
-            } else {
-                echo "✗ Authentication failed: $response\n";
-                fclose($socket);
-                exit(1);
-            }
-        } else {
-            echo "✗ Authentication failed: $response\n";
-            fclose($socket);
-            exit(1);
-        }
-    }
-    
-    // Send PING command
-    echo "Sending PING command...\n";
-    $ping_cmd = '*1' . "\r\n" . '$4' . "\r\n" . 'PING' . "\r\n";
-    fwrite($socket, $ping_cmd);
-    $response = fgets($socket, 512);
-    
-    if (strpos($response, 'PONG') !== FALSE) {
-        echo "✓ PING successful!\n";
-    } else {
-        echo "✗ PING failed: $response\n";
-    }
-    
-    fclose($socket);
-    
-    echo "\n✓ Redis connection is working!\n";
-    echo "You can now run the queue worker:\n";
-    echo "  php application/commands/queue_worker.php\n";
-    
-} catch (Exception $e) {
-    echo "✗ Error: " . $e->getMessage() . "\n";
-    echo "\nMake sure:\n";
-    echo "1. Redis server is running\n";
-    echo "2. REDIS_HOST, REDIS_PORT, and REDIS_PASSWORD are set correctly\n";
-    echo "3. Your firewall allows connection to the Redis server\n";
+if (empty($rest_url) || empty($rest_token)) {
+    echo "ERROR: Upstash credentials not configured\n";
     exit(1);
 }
+
+echo "Attempting to connect...\n\n";
+
+// Test PING command
+$cmd = ['PING'];
+$payload = json_encode($cmd);
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $rest_url);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Authorization: Bearer ' . $rest_token,
+    'Content-Type: application/json',
+]);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+$response = curl_exec($ch);
+$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$error = curl_error($ch);
+curl_close($ch);
+
+echo "Command: " . json_encode($cmd) . "\n";
+echo "HTTP Status: $http_code\n";
+
+if ($error) {
+    echo "ERROR: $error\n\n";
+    exit(1);
+}
+
+if ($http_code !== 200) {
+    echo "ERROR: HTTP $http_code\n";
+    echo "Response: $response\n\n";
+    exit(1);
+}
+
+$result = json_decode($response, TRUE);
+echo "Response: " . json_encode($result) . "\n\n";
+
+echo "✓ Upstash Redis REST API connection is working!\n";
+echo "\nYou can now:\n";
+echo "1. Start the queue worker: php application/commands/queue_worker.php\n";
+echo "2. Login to test 2FA with instant OTP verification page\n";
+exit(0);
 ?>

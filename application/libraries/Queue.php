@@ -3,15 +3,13 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
  * Queue Library for handling asynchronous job processing
- * Uses Redis as the backend for job storage
- * No external dependencies - uses PHP native socket functions
+ * Uses Upstash Redis REST API for job storage
+ * No external dependencies - uses PHP curl functions
  */
 class Queue
 {
-	private $socket;
-	private $host;
-	private $port;
-	private $password;
+	private $rest_url;
+	private $rest_token;
 	private $queue_key = 'codeigniter:queue';
 	private $connected = FALSE;
 
@@ -21,134 +19,94 @@ class Queue
 		$ci = &get_instance();
 		$ci->config->load('queue');
 
-		// Get Redis configuration
-		$this->host = $ci->config->item('redis_host');
-		$this->port = $ci->config->item('redis_port');
-		$this->password = $ci->config->item('redis_password');
+		// Get Upstash configuration
+		$this->rest_url = getenv('UPSTASH_REDIS_REST_URL') ?: $ci->config->item('upstash_redis_rest_url');
+		$this->rest_token = getenv('UPSTASH_REDIS_REST_TOKEN') ?: $ci->config->item('upstash_redis_rest_token');
 
-		// Connect to Redis
+		// Connect and test
 		$this->_connect();
 	}
 
 	/**
-	 * Connect to Redis using PHP sockets
+	 * Connect to Upstash Redis via REST API
 	 */
 	private function _connect()
 	{
 		try {
-			echo "[v0] Queue: Attempting to connect to Redis at {$this->host}:{$this->port}\n";
-			$this->socket = @fsockopen($this->host, $this->port, $errno, $errstr, 5);
+			if (empty($this->rest_url) || empty($this->rest_token)) {
+				throw new Exception('Upstash REST URL or token not configured');
+			}
+
+			echo "[v0] Queue: Connecting to Upstash Redis REST API\n";
 			
-			if (!$this->socket) {
-				throw new Exception("Failed to connect to Redis at {$this->host}:{$this->port} - $errstr ($errno)");
-			}
-
-			stream_set_timeout($this->socket, 5);
-
-			// Authenticate if password is set
-			// Upstash uses ACL authentication: AUTH username password
-			if (!empty($this->password)) {
-				echo "[v0] Queue: Authenticating with Redis password (Upstash format)\n";
-				// Try ACL format first (for Upstash): AUTH default <password>
-				$response = $this->_send_command('AUTH', array('default', $this->password));
-				if ($response === FALSE || strpos($response, 'ERR') !== FALSE) {
-					echo "[v0] Queue: ACL auth failed, trying simple auth format\n";
-					// Fall back to simple auth format
-					$response = $this->_send_command('AUTH', array($this->password));
-				}
-				if ($response === FALSE || strpos($response, 'ERR') !== FALSE) {
-					throw new Exception('Redis authentication failed');
-				}
-				echo "[v0] Queue: Authentication successful\n";
-			}
-
 			// Test connection with PING
-			$response = $this->_send_command('PING');
-			if (strpos($response, 'PONG') === FALSE) {
-				throw new Exception('Redis PING failed - response: ' . $response);
+			$response = $this->_rest_request('PING');
+			
+			if ($response === FALSE) {
+				throw new Exception('Failed to connect to Upstash Redis');
 			}
 
 			$this->connected = TRUE;
-			echo "[v0] Queue: Connected to Redis successfully\n";
-			log_message('info', 'Queue: Connected to Redis at ' . $this->host . ':' . $this->port);
+			echo "[v0] Queue: Connected to Upstash Redis successfully\n";
+			log_message('info', 'Queue: Connected to Upstash Redis');
 		} catch (Exception $e) {
 			echo "[v0] Queue ERROR: " . $e->getMessage() . "\n";
-			log_message('error', 'Queue: Redis connection failed - ' . $e->getMessage());
+			log_message('error', 'Queue: Connection failed - ' . $e->getMessage());
 			$this->connected = FALSE;
 		}
 	}
 
 	/**
-	 * Send a command to Redis and get response
+	 * Make HTTP request to Upstash REST API
 	 */
-	private function _send_command($command, $arguments = array())
+	private function _rest_request($command, $arguments = array())
 	{
-		if (!$this->connected || !$this->socket) {
+		if (!$this->connected && $command !== 'PING') {
 			return FALSE;
 		}
 
-		$parts = array_merge(array($command), $arguments);
-		$request = '*' . count($parts) . "\r\n";
-		
-		foreach ($parts as $part) {
-			$request .= '$' . strlen($part) . "\r\n" . $part . "\r\n";
-		}
+		try {
+			// Build command array
+			$cmd = array($command);
+			if (!empty($arguments)) {
+				$cmd = array_merge($cmd, $arguments);
+			}
 
-		// Send the command
-		if (fwrite($this->socket, $request) === FALSE) {
-			$this->connected = FALSE;
+			// Prepare request
+			$url = $this->rest_url;
+			$headers = array(
+				'Authorization: Bearer ' . $this->rest_token,
+				'Content-Type: application/json',
+			);
+
+			$payload = json_encode($cmd);
+
+			// Make request with curl
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $url);
+			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+			$response = curl_exec($ch);
+			$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			curl_close($ch);
+
+			if ($http_code !== 200) {
+				throw new Exception("Upstash API error: HTTP $http_code - $response");
+			}
+
+			$result = json_decode($response, TRUE);
+			
+			if (isset($result['error'])) {
+				throw new Exception('Upstash API error: ' . $result['error']);
+			}
+
+			return $result['result'] ?? $result;
+		} catch (Exception $e) {
+			log_message('error', 'Queue REST request failed: ' . $e->getMessage());
 			return FALSE;
-		}
-
-		// Read the response
-		return $this->_read_response();
-	}
-
-	/**
-	 * Read response from Redis
-	 */
-	private function _read_response()
-	{
-		if (!$this->socket) {
-			return FALSE;
-		}
-
-		$line = fgets($this->socket, 512);
-		
-		if ($line === FALSE) {
-			return FALSE;
-		}
-
-		$type = $line[0];
-		$data = substr(trim($line), 1);
-
-		switch ($type) {
-			case '+': // Simple string
-				return $data;
-			case '-': // Error
-				log_message('error', 'Redis error: ' . $data);
-				return FALSE;
-			case ':': // Integer
-				return intval($data);
-			case '$': // Bulk string
-				$len = intval($data);
-				if ($len === -1) {
-					return NULL;
-				}
-				$bulk = fread($this->socket, $len + 2);
-				return substr($bulk, 0, -2);
-			case '*': // Array
-				$count = intval($data);
-				if ($count === -1) {
-					return NULL;
-				}
-				$array = array();
-				for ($i = 0; $i < $count; $i++) {
-					$array[] = $this->_read_response();
-				}
-				return $array;
-			default:
-				return FALSE;
 		}
 	}
 
@@ -162,8 +120,8 @@ class Queue
 	public function push($job_type, $data = array())
 	{
 		if (!$this->connected) {
-			echo "[v0] Queue ERROR: Redis connection not available - cannot push {$job_type} job\n";
-			log_message('error', 'Queue: Redis connection not available - cannot push ' . $job_type . ' job');
+			echo "[v0] Queue ERROR: Upstash connection not available\n";
+			log_message('error', 'Queue: Connection not available');
 			return FALSE;
 		}
 
@@ -175,12 +133,17 @@ class Queue
 		);
 
 		try {
-			echo "[v0] Queue: Pushing {$job_type} job to Redis\n";
-			$result = $this->_send_command('LPUSH', array($this->queue_key, json_encode($job)));
-			echo "[v0] Queue: Push result: " . ($result !== FALSE ? 'SUCCESS' : 'FAILED') . "\n";
-			return ($result !== FALSE);
+			echo "[v0] Queue: Pushing {$job_type} job to Upstash\n";
+			$result = $this->_rest_request('LPUSH', array($this->queue_key, json_encode($job)));
+			
+			if ($result === FALSE) {
+				throw new Exception('Failed to push job');
+			}
+
+			echo "[v0] Queue: Push successful\n";
+			return TRUE;
 		} catch (Exception $e) {
-			echo "[v0] Queue ERROR: Failed to push job - " . $e->getMessage() . "\n";
+			echo "[v0] Queue ERROR: " . $e->getMessage() . "\n";
 			log_message('error', 'Queue: Failed to push job - ' . $e->getMessage());
 			return FALSE;
 		}
@@ -198,7 +161,8 @@ class Queue
 		}
 
 		try {
-			$job_json = $this->_send_command('RPOP', array($this->queue_key));
+			$job_json = $this->_rest_request('RPOP', array($this->queue_key));
+			
 			if ($job_json === NULL || $job_json === FALSE) {
 				return NULL;
 			}
@@ -227,7 +191,7 @@ class Queue
 		}
 
 		try {
-			$size = $this->_send_command('LLEN', array($this->queue_key));
+			$size = $this->_rest_request('LLEN', array($this->queue_key));
 			return ($size !== FALSE) ? intval($size) : 0;
 		} catch (Exception $e) {
 			log_message('error', 'Queue: Failed to get queue size - ' . $e->getMessage());
@@ -257,18 +221,11 @@ class Queue
 		}
 
 		try {
-			$result = $this->_send_command('DEL', array($this->queue_key));
+			$result = $this->_rest_request('DEL', array($this->queue_key));
 			return ($result !== FALSE);
 		} catch (Exception $e) {
 			log_message('error', 'Queue: Failed to flush queue - ' . $e->getMessage());
 			return FALSE;
-		}
-	}
-
-	public function __destruct()
-	{
-		if ($this->socket) {
-			fclose($this->socket);
 		}
 	}
 }

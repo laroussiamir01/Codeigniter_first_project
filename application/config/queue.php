@@ -3,17 +3,14 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
  * Queue Configuration
- * Configuration for Redis queue system
+ * Configuration for Upstash Redis REST API
  */
 
-// Redis Host
-$config['redis_host'] = getenv('REDIS_HOST') ?: 'localhost';
+// Upstash Redis REST URL
+$config['upstash_redis_rest_url'] = getenv('UPSTASH_REDIS_REST_URL') ?: '';
 
-// Redis Port
-$config['redis_port'] = getenv('REDIS_PORT') ?: 6379;
-
-// Redis Password (optional)
-$config['redis_password'] = getenv('REDIS_PASSWORD') ?: NULL;
+// Upstash Redis REST Token
+$config['upstash_redis_rest_token'] = getenv('UPSTASH_REDIS_REST_TOKEN') ?: '';
 
 // Queue name/key prefix
 $config['queue_name'] = 'codeigniter:queue';
