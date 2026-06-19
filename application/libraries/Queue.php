@@ -36,6 +36,7 @@ class Queue
 	private function _connect()
 	{
 		try {
+			echo "[v0] Queue: Attempting to connect to Redis at {$this->host}:{$this->port}\n";
 			$this->socket = @fsockopen($this->host, $this->port, $errno, $errstr, 5);
 			
 			if (!$this->socket) {
@@ -46,18 +47,21 @@ class Queue
 
 			// Authenticate if password is set
 			if (!empty($this->password)) {
+				echo "[v0] Queue: Authenticating with Redis password\n";
 				$this->_send_command('AUTH', array($this->password));
 			}
 
 			// Test connection with PING
 			$response = $this->_send_command('PING');
 			if (strpos($response, 'PONG') === FALSE) {
-				throw new Exception('Redis PING failed');
+				throw new Exception('Redis PING failed - response: ' . $response);
 			}
 
 			$this->connected = TRUE;
+			echo "[v0] Queue: Connected to Redis successfully\n";
 			log_message('info', 'Queue: Connected to Redis at ' . $this->host . ':' . $this->port);
 		} catch (Exception $e) {
+			echo "[v0] Queue ERROR: " . $e->getMessage() . "\n";
 			log_message('error', 'Queue: Redis connection failed - ' . $e->getMessage());
 			$this->connected = FALSE;
 		}
@@ -147,7 +151,8 @@ class Queue
 	public function push($job_type, $data = array())
 	{
 		if (!$this->connected) {
-			log_message('error', 'Queue: Redis connection not available');
+			echo "[v0] Queue ERROR: Redis connection not available - cannot push {$job_type} job\n";
+			log_message('error', 'Queue: Redis connection not available - cannot push ' . $job_type . ' job');
 			return FALSE;
 		}
 
@@ -159,9 +164,12 @@ class Queue
 		);
 
 		try {
+			echo "[v0] Queue: Pushing {$job_type} job to Redis\n";
 			$result = $this->_send_command('LPUSH', array($this->queue_key, json_encode($job)));
+			echo "[v0] Queue: Push result: " . ($result !== FALSE ? 'SUCCESS' : 'FAILED') . "\n";
 			return ($result !== FALSE);
 		} catch (Exception $e) {
+			echo "[v0] Queue ERROR: Failed to push job - " . $e->getMessage() . "\n";
 			log_message('error', 'Queue: Failed to push job - ' . $e->getMessage());
 			return FALSE;
 		}
