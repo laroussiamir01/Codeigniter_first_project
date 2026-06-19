@@ -46,9 +46,20 @@ class Queue
 			stream_set_timeout($this->socket, 5);
 
 			// Authenticate if password is set
+			// Upstash uses ACL authentication: AUTH username password
 			if (!empty($this->password)) {
-				echo "[v0] Queue: Authenticating with Redis password\n";
-				$this->_send_command('AUTH', array($this->password));
+				echo "[v0] Queue: Authenticating with Redis password (Upstash format)\n";
+				// Try ACL format first (for Upstash): AUTH default <password>
+				$response = $this->_send_command('AUTH', array('default', $this->password));
+				if ($response === FALSE || strpos($response, 'ERR') !== FALSE) {
+					echo "[v0] Queue: ACL auth failed, trying simple auth format\n";
+					// Fall back to simple auth format
+					$response = $this->_send_command('AUTH', array($this->password));
+				}
+				if ($response === FALSE || strpos($response, 'ERR') !== FALSE) {
+					throw new Exception('Redis authentication failed');
+				}
+				echo "[v0] Queue: Authentication successful\n";
 			}
 
 			// Test connection with PING

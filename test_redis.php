@@ -54,13 +54,29 @@ try {
     
     // Authenticate if password is set
     if (!empty($password)) {
-        echo "Authenticating with password...\n";
-        $auth_cmd = '*2' . "\r\n" . '$4' . "\r\n" . 'AUTH' . "\r\n" . '$' . strlen($password) . "\r\n" . $password . "\r\n";
+        echo "Authenticating with password (Upstash ACL format)...\n";
+        
+        // Try Upstash ACL format first: AUTH default <password>
+        $auth_cmd = '*3' . "\r\n" . '$4' . "\r\n" . 'AUTH' . "\r\n" . '$7' . "\r\n" . 'default' . "\r\n" . '$' . strlen($password) . "\r\n" . $password . "\r\n";
         fwrite($socket, $auth_cmd);
         $response = fgets($socket, 512);
         
         if (strpos($response, '+OK') !== FALSE) {
-            echo "✓ Authentication successful!\n";
+            echo "✓ Authentication successful (ACL format)!\n";
+        } elseif (strpos($response, 'ERR') !== FALSE) {
+            echo "  ACL format failed, trying simple auth...\n";
+            // Fall back to simple format: AUTH <password>
+            $auth_cmd = '*2' . "\r\n" . '$4' . "\r\n" . 'AUTH' . "\r\n" . '$' . strlen($password) . "\r\n" . $password . "\r\n";
+            fwrite($socket, $auth_cmd);
+            $response = fgets($socket, 512);
+            
+            if (strpos($response, '+OK') !== FALSE) {
+                echo "✓ Authentication successful (simple format)!\n";
+            } else {
+                echo "✗ Authentication failed: $response\n";
+                fclose($socket);
+                exit(1);
+            }
         } else {
             echo "✗ Authentication failed: $response\n";
             fclose($socket);
