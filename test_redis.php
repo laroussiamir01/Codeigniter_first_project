@@ -5,15 +5,42 @@
  * Run: php test_redis.php
  */
 
+// Load environment variables from .env files
+$env_files = [
+    '.env.development.local',
+    '.env.local',
+    '.env'
+];
+
+foreach ($env_files as $file) {
+    if (file_exists($file)) {
+        $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            $line = trim($line);
+            // Skip comments and empty lines
+            if (empty($line) || $line[0] === '#') continue;
+            // Skip lines without =
+            if (strpos($line, '=') === false) continue;
+            
+            list($key, $value) = explode('=', $line, 2);
+            $key = trim($key);
+            $value = trim($value, '\'" ');
+            putenv($key . '=' . $value);
+        }
+        echo "[OK] Loaded environment from: $file\n\n";
+        break;
+    }
+}
+
 $host = getenv('REDIS_HOST') ?: 'localhost';
-$port = getenv('REDIS_PORT') ?: 6379;
+$port = intval(getenv('REDIS_PORT') ?: 6379);
 $password = getenv('REDIS_PASSWORD') ?: '';
 
 echo "Testing Redis Connection\n";
 echo "========================\n";
 echo "Host: $host\n";
 echo "Port: $port\n";
-echo "Password: " . (!empty($password) ? '***SET***' : 'NOT SET') . "\n\n";
+echo "Password: " . (!empty($password) ? '***SET*** (' . strlen($password) . ' chars)' : 'NOT SET') . "\n\n";
 
 try {
     echo "Attempting to connect...\n";
